@@ -5,6 +5,6 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Program.cs" />
+    <Content Include="FriendAnalyzer.cs" />
   </ItemGroup>
 </Project>

@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace FriendAnalyzer
+namespace Analyzer
 {
-    class Program
+    class FriendAnalyzer
     {
         static void Main(string[] args)
         {
