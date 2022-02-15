@@ -8,5 +8,6 @@
 
  Change <b>\<OutputType>Exe\</OutputType></b>
  To <b>\<OutputType>Library\</OutputType></b>
+ (In FriendAnalyzer.csproj)
  To export a .dll
  
