@@ -6,8 +6,5 @@
  2) dotnet build / run (to test)
  3) dotnet publish (for others to run)
 
- Change <b>\<OutputType>Exe\</OutputType></b>
- To <b>\<OutputType>Library\</OutputType></b>
- (In FriendAnalyzer.csproj)
- To export a .dll
+ Change <b>\<OutputType>Exe\</OutputType></b> to <b>\<OutputType>Library\</OutputType></b> (in FriendAnalyzer.csproj) to export a .dll
  
