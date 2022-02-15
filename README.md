@@ -5,9 +5,8 @@
  1) cd FriendAnalyzer
  2) dotnet build / run (to test)
  3) dotnet publish (for others to run)
- Change
- <OutputType>Exe</OutputType>
- To 
- <OutputType>Library</OutputType>
+
+ Change <b><OutputType>Exe</OutputType></b>
+ To <b><OutputType>Library</OutputType></b>
  To export a .dll
  
