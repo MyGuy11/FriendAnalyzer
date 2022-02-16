@@ -1,6 +1,6 @@
-﻿using System.Threading;
+﻿using System.IO;
+using System.Threading;
 using System;
-using System.Drawing;
 
 namespace Analyzer
 {
@@ -18,7 +18,7 @@ namespace Analyzer
             }
             Console.WriteLine("Done");
             Thread.Sleep(500);
-            Console.WriteLine("Candidates found!"); 
+            Console.WriteLine("Candidates found!");
             Console.WriteLine("User: Pega");
             Console.WriteLine("Reason: Mutual Server");
             Console.WriteLine("Reason: Mutual Friends");
@@ -26,13 +26,23 @@ namespace Analyzer
             Thread.Sleep(500);
             Console.WriteLine("Send friend request(s)? (y/n)");
             string answer = Console.In.ReadLine().ToLower();
+            FileStream file = new FileStream(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "eric.txt"), FileMode.Create);
+            using (StreamWriter writer = new StreamWriter(file))
+            {
+                writer.WriteLine("This is how u make a txt file");
+                writer.Close();
+            }
+
+            file.Close();
+            file.Dispose();
+
             while (!(answer.Equals("y") || answer.Equals("n")))
             {
                 Console.WriteLine("I said (y/n), loner");
                 answer = Console.In.ReadLine().ToLower();
             }
-            if (answer.Equals("y") { Console.WriteLine("Friend request(s) sent"); }
-            if (answer.Equals("n") { Console.WriteLine("Friend request(s) not sent"); }
+            if (answer.Equals("y")) { Console.WriteLine("Friend request(s) sent"); }
+            if (answer.Equals("n")) { Console.WriteLine("Friend request(s) not sent"); }
         }
     }
 }
