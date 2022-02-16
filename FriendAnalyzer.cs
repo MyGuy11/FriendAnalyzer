@@ -26,13 +26,13 @@ namespace Analyzer
             Thread.Sleep(500);
             Console.WriteLine("Send friend request(s)? (y/n)");
             string answer = Console.In.ReadLine().ToLower();
-            while (!(answer.Equals("y") || answer.Equals("Y") || answer.Equals("n") || answer.Equals("N")))
+            while (!(answer.Equals("y") || answer.Equals("n")))
             {
                 Console.WriteLine("I said (y/n), loner");
-                answer = Console.In.ReadLine();
+                answer = Console.In.ReadLine().ToLower();
             }
-            if (answer.Equals("y") || answer.Equals("Y")) { Console.WriteLine("Friend request(s) sent"); }
-            if (answer.Equals("n") || answer.Equals("N")) { Console.WriteLine("Friend request(s) not sent"); }
+            if (answer.Equals("y") { Console.WriteLine("Friend request(s) sent"); }
+            if (answer.Equals("n") { Console.WriteLine("Friend request(s) not sent"); }
         }
     }
 }
