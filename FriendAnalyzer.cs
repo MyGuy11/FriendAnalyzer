@@ -25,7 +25,7 @@ namespace Analyzer
             Console.WriteLine("Reason: Compatible");
             Thread.Sleep(500);
             Console.WriteLine("Send friend request(s)? (y/n)");
-            string answer = Console.In.ReadLine();
+            string answer = Console.In.ReadLine().ToLower();
             while (!(answer.Equals("y") || answer.Equals("Y") || answer.Equals("n") || answer.Equals("N")))
             {
                 Console.WriteLine("I said (y/n), loner");
