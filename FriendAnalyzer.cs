@@ -1,4 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Reflection.Metadata;
+using System.CodeDom.Compiler;
+using System.Xml;
+using System.Diagnostics.CodeAnalysis;
 // Authors = MyGuy, Jasuv
 
 using System.Collections.Generic;
@@ -11,7 +14,7 @@ namespace Analyzer
 {
     public static class FriendAnalyzer
     {
-        private static string friendAnalyzerFolderPath; // LocalAppData/FriendAnalyzer/
+        private static string friendAnalyzerFolderPath; // {LocalAppData}/FriendAnalyzer/
         public static List<Person> peopleList { get; internal set; } // Stores the People object of all people registered
         private static List<string> peopleNames = new(); // Stores the names of the people in peopleList 
         private static List<string> peopleTags = new(); // Stores all the Tags that People in your list possess
@@ -32,16 +35,41 @@ namespace Analyzer
             {
                 Console.WriteLine("You have no friends!");
             }
-            string input = "NULL";
+
             while (!exit) // while exit == false
             {
-                Console.WriteLine("What would you like to do?");
-                input = Console.In.ReadLine();
-                
-                if (string.Compare("AddPerson", input) >= 0)
-                {
-                    AddPerson();
-                }
+            }
+        }
+        
+
+        // This is how you tell the ide what info to display when u interact with the Method
+        /// <summary>
+        /// The menu system for the program.
+        /// The number of <paramref name="options"/> and <paramref name="methods"/> must be equal.
+        /// </summary>
+        /// <returns> Returns an int error code 
+        /// (0 = ok)
+        /// (-1 = inequal amount of <paramref name="options"/> and <paramref name="methods"/>) 
+        /// </returns>
+        private static int Menu(List<string> options, List<Action> methods)
+        {
+            string input = "NU,LL";
+,
+            Console.WriteLine("What would you like to do?");
+            input = Console.In.ReadLine();
+
+            if (options.Contains("exit") == false)
+            {
+                options.Add("exit");
+                methods.Add(() => exit = true); // So, this is a delegate
+                // Think of it as a method, but not explicitly defined
+            }
+
+            if (options.Count != methods.Count) { return -1; }
+
+            while (!exit)
+            {
+
 
                 if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
                 {
@@ -56,6 +84,8 @@ namespace Analyzer
                     }
                 }
             }
+
+            return 0;
         }
 
         // Adds a person to the registered list
