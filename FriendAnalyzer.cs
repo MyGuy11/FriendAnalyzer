@@ -1,104 +1,168 @@
-﻿using System.Reflection.Metadata;
-using System.CodeDom.Compiler;
-using System.Xml;
-using System.Diagnostics.CodeAnalysis;
-// Authors = MyGuy, Jasuv
+﻿// Authors = MyGuy, Jasuv
 
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Text.Json; // We're converting the storage medium to JSON
+using System.Threading;
+
+// This is useful if you wanna find info about c# stuff
+// https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/
 
 namespace Analyzer
 {
     public static class FriendAnalyzer
     {
-        private static string friendAnalyzerFolderPath; // {LocalAppData}/FriendAnalyzer/
-        public static List<Person> peopleList { get; internal set; } // Stores the People object of all people registered
-        private static List<string> peopleNames = new(); // Stores the names of the people in peopleList 
-        private static List<string> peopleTags = new(); // Stores all the Tags that People in your list possess
-        private static bool exit;
+        private static string FriendAnalyzerFolderPath; // {LocalAppData}/FriendAnalyzer/
+        private static DirectoryInfo FriendAnalyzerFolderDirectory; // DirectoryInfo of the above directory, might be useful later
+        public static List<Person> PeopleList { get; internal set; } // Stores the People object of all people registered
+        private static List<string> PeopleNames = new(); // Stores the names of the people in peopleList 
+        private static List<string> PeopleTags = new(); // Stores all the Tags that People in your list possess
+        private static List<List<string>> Manual = new(); // Stores the descriptions of all the functions for Help()
+        private static ThreadLocal<int> Sebek = new(() => 0); // Keeps track of recurses; Thx to Jeroen van Langen on Stack Overflow for this
+        private static bool _break; // Used for Break()
 
         static FriendAnalyzer()
         {
-            peopleList = new();
+            PeopleList = new();
+            SetPath();
         }
 
         public static void Main()
         {
+
             Console.WriteLine("Initializing FriendAnalyzer");
-            SetPath();
-            Console.Write("Analyzing FriendList");
+            Console.WriteLine("Analyzing FriendList");
+            Console.WriteLine("\0");
             ReadPeople();
-            if (peopleList.Count == 0)
-            {
-                Console.WriteLine("You have no friends!");
-            }
 
-            while (!exit) // while exit == false
-            {
-            }
+            if (PeopleList.Count == 0) { Console.WriteLine("You have no friends!"); }
+            Console.WriteLine("Errorcode: " + Menu(new(), new()));
         }
-        
 
-        // This is how you tell the ide what info to display when u interact with the Method
+
+        // This is how you tell the IDE what info to display when u interact with the Method
         /// <summary>
-        /// The menu system for the program.
+        /// The menu system for the program.<br />
         /// The number of <paramref name="options"/> and <paramref name="methods"/> must be equal.
         /// </summary>
-        /// <returns> Returns an int error code 
-        /// (0 = ok)
+        /// <returns> Returns an int error code.<br />
+        /// (0 = ok)<br />
         /// (-1 = inequal amount of <paramref name="options"/> and <paramref name="methods"/>) 
         /// </returns>
-        private static int Menu(List<string> options, List<Action> methods)
+        internal static int Menu(List<string> options, List<Action> methods)
         {
-            string input = "NU,LL";
-,
-            Console.WriteLine("What would you like to do?");
-            input = Console.In.ReadLine();
+            Sebek.Value++;
+            string input = "NULL";
+            bool exit = false;
+
+            if (options.Contains("list") == false)
+            {
+                options.Add("list");
+                methods.Add(() => List(new() { options, methods })); // So, this is a delegate
+                // Think of it as a reference to a method with a specific parameter
+            }
+
+            if (options.Contains("path") == false)
+            {
+                options.Add("path");
+                methods.Add(() => Console.WriteLine(FriendAnalyzerFolderPath));
+            }
+
+            if (options.Contains("help") == false)
+            {
+                options.Add("help");
+                methods.Add(() => Help(options));
+            }
+
+            if (Sebek.Value > 2 && options.Contains("back") == false)
+            {
+                options.Add("back");
+                methods.Add(() => Break());
+            }
 
             if (options.Contains("exit") == false)
             {
                 options.Add("exit");
-                methods.Add(() => exit = true); // So, this is a delegate
-                // Think of it as a method, but not explicitly defined
+                methods.Add(() => exit = true);
             }
 
             if (options.Count != methods.Count) { return -1; }
 
             while (!exit)
             {
-
-
-                if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine("What would you like to do? (Type \"help\" for options)");
+                input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
+                
+                for (int i = 0; i < options.Count; i++)
                 {
-                    Console.WriteLine("Do you want to exit FriendAnalyzer? (y/n)");
-                    
-                    while (input != "y" || input != "n")
+                    if (input.Length == 0) { break; }
+
+                    if (input == options[i])
                     {
-                        input = Console.In.ReadLine();
-                        if (input.Equals("y", StringComparison.OrdinalIgnoreCase)) { exit = true; break; }
-                        else if (input.Equals("n", StringComparison.OrdinalIgnoreCase)) { break; }
-                        else { Console.WriteLine("(y/n)"); }
+                        methods[i]();
                     }
+                }
+
+                if (_break)
+                {
+                    _break = false;
+                    break;
                 }
             }
 
             return 0;
         }
 
-        // Adds a person to the registered list
-        private static void AddPerson()
+        // Used for the "back" function, breaks out of the current recursion's loop
+        private static void Break()
         {
-            // Ask for name and tags
+            _break = true;
+        }
+
+        private static void List(List<IList> lists)
+        {
+            for (int i = 0; i < lists.Count; i++)
+            {
+                IList list = lists[i];
+                for (int j = 0; j < list.Count; j++)
+                {
+                    Console.WriteLine(list.ToString() + '[' + j + "]: " + list[j]);
+                }
+            }
+        }
+
+        private static void Help(List<string> list)
+        {
+            Console.Write('\n');
+            Console.WriteLine("Available options:");
+            foreach (string item in list)
+            {
+                Console.WriteLine(item);
+            }
+            Console.Write('\n');
+        }
+
+        internal static void People()
+        {
+            
+        }
+
+        // Adds a person to the registered list
+        internal static void AddPerson()
+        {
+            string input = "\0";
+            Console.WriteLine("Name?");
+            input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
         }
 
 
         // Sets the path to the folder containing data files
         private static void SetPath()
         {
-            friendAnalyzerFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FriendAnalyzer");
+            FriendAnalyzerFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FriendAnalyzer");
 
             // This exists because Microsoft doesn't know that their own operating system isn't supposed to return '/' in it's path strings
             // Thanks, Microsoft
@@ -107,12 +171,16 @@ namespace Analyzer
                 int index;
                 string temp;
                 string temp2;
-                while (friendAnalyzerFolderPath.Contains('/'))
+                while (FriendAnalyzerFolderPath.Contains('/'))
                 {
-                    index = friendAnalyzerFolderPath.IndexOf('/');
-                    temp = friendAnalyzerFolderPath.Substring(0, index);
-                    temp2 = friendAnalyzerFolderPath.Substring(index + 1);
-                    friendAnalyzerFolderPath = temp + '\\' + temp2;
+                    index = FriendAnalyzerFolderPath.IndexOf('/');
+                    temp = FriendAnalyzerFolderPath.Substring(0, index);
+
+                    // Apparently this means Substring (c# 8+)
+                    // I think it's because it grabs all chars from the index onwards (hence the ..)
+                    // This replaces FriendAnalyzerFolderPath.Substring(index + 1);
+                    temp2 = FriendAnalyzerFolderPath[(index + 1)..];
+                    FriendAnalyzerFolderPath = temp + '\\' + temp2;
                 }
             }
         }
@@ -123,9 +191,9 @@ namespace Analyzer
         internal static async void SerializePeople()
         {
             string path;
-            foreach (Person person in peopleList)
+            foreach (Person person in PeopleList)
             {
-                path = Path.Combine(friendAnalyzerFolderPath, person.name + ".json");
+                path = Path.Combine(FriendAnalyzerFolderPath, person.Name + ".json");
                 using (FileStream stream = File.Create(path))
                 {
                     await JsonSerializer.SerializeAsync<Person>(stream, person);
@@ -137,7 +205,15 @@ namespace Analyzer
         // Reads all the .json files in the data folder and puts the Person in peopleList
         internal static async void ReadPeople()
         {
+            // I know i could do !File.Exists(path), but it's explicitly definied for clarity
+            if (Directory.Exists(FriendAnalyzerFolderPath) == false)
+            {
+                Console.WriteLine("Creating Friend Analyzer data directory at " + FriendAnalyzerFolderPath);
+                FriendAnalyzerFolderDirectory = Directory.CreateDirectory(FriendAnalyzerFolderPath);
+            }
+
             // Look at every Person.json file and read it into peopleList
+
         }
 
         // OLD ANALYZER

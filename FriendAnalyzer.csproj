@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="FriendAnalyzer.cs" />
+    <Content Include="Person.cs" />
   </ItemGroup>
 </Project>

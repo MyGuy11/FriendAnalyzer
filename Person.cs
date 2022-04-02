@@ -1,28 +1,30 @@
+// Authors = MyGuy, Jasuv
+
 using System;
 using System.Collections.Generic;
 
 namespace Analyzer
 {
-    [Serializable]
+    [Serializable] // I don't know if this is necessary for JSON serialization
     public class Person
     {
-        public string name { get; private set; }
-        public List<string> tags { get; private set; }
+        public string Name { get; private set; }
+        public List<string> Tags { get; private set; }
 
         public Person(string inName, List<string> inTags)
         {
-            name = inName;
-            tags = inTags;
+            Name = inName;
+            Tags = inTags;
         }
 
         public void AddTag(string inTag){
-            tags.Add(inTag);
+            Tags.Add(inTag);
         }
 
         public void AddTag(List<string> inTags){
             foreach (string tag in inTags)
             {
-                tags.Add(tag);
+                Tags.Add(tag);
             }
         }
     }
