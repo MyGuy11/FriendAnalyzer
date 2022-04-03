@@ -1,10 +1,12 @@
-﻿// Authors = MyGuy, Jasuv
+﻿using System.Security.AccessControl;
+// Authors = MyGuy, Jasuv
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Json; // We're converting the storage medium to JSON
 using System.Threading;
 
@@ -20,9 +22,10 @@ namespace Analyzer
         public static List<Person> PeopleList { get; internal set; } // Stores the People object of all people registered
         private static List<string> PeopleNames = new(); // Stores the names of the people in peopleList 
         private static List<string> PeopleTags = new(); // Stores all the Tags that People in your list possess
-        private static List<List<string>> Manual = new(); // Stores the descriptions of all the functions for Help()
+        private static Dictionary<string, string> Manual = new(); // Stores the descriptions of all the functions for Help()
         private static ThreadLocal<int> Sebek = new(() => 0); // Keeps track of recurses; Thx to Jeroen van Langen on Stack Overflow for this
         private static bool _break; // Used for Break()
+        private static bool exit;
 
         static FriendAnalyzer()
         {
@@ -32,16 +35,22 @@ namespace Analyzer
 
         public static void Main()
         {
-
             Console.WriteLine("Initializing FriendAnalyzer");
             Console.WriteLine("Analyzing FriendList");
-            Console.WriteLine("\0");
             ReadPeople();
 
             if (PeopleList.Count == 0) { Console.WriteLine("You have no friends!"); }
-            Console.WriteLine("Errorcode: " + Menu(new(), new()));
-        }
 
+            Dictionary<string, Action> funcs = new()
+            {
+                { "people", () => People() }
+            };
+
+            int err = Menu(funcs);
+            Console.WriteLine("Errorcode: " + err);
+            Environment.ExitCode = err;
+            SerializePeople();
+        }
 
         // This is how you tell the IDE what info to display when u interact with the Method
         /// <summary>
@@ -52,60 +61,48 @@ namespace Analyzer
         /// (0 = ok)<br />
         /// (-1 = inequal amount of <paramref name="options"/> and <paramref name="methods"/>) 
         /// </returns>
-        internal static int Menu(List<string> options, List<Action> methods)
+        internal static int Menu(Dictionary<string, Action> functions)
         {
             Sebek.Value++;
-            string input = "NULL";
-            bool exit = false;
+            Console.WriteLine("Sebek: " + Sebek.Value);
+            string input = "NULL"; // Setting a value becuase of PTSD from Unity
 
-            if (options.Contains("list") == false)
+            if (Sebek.Value > 1 && functions.ContainsKey("back") == false)
             {
-                options.Add("list");
-                methods.Add(() => List(new() { options, methods })); // So, this is a delegate
-                // Think of it as a reference to a method with a specific parameter
+                functions.Add("back", () => Break());
             }
 
-            if (options.Contains("path") == false)
+            if (functions.ContainsKey("exit") == false)
             {
-                options.Add("path");
-                methods.Add(() => Console.WriteLine(FriendAnalyzerFolderPath));
+                functions.Add("exit", () => exit = true);
             }
 
-            if (options.Contains("help") == false)
+            if (functions.ContainsKey("help") == false)
             {
-                options.Add("help");
-                methods.Add(() => Help(options));
+                functions.Add("help", () => Help(functions));
             }
 
-            if (Sebek.Value > 2 && options.Contains("back") == false)
+            if (functions.ContainsKey("path") == false)
             {
-                options.Add("back");
-                methods.Add(() => Break());
+                functions.Add("path", () => Console.WriteLine(FriendAnalyzerFolderPath));
             }
 
-            if (options.Contains("exit") == false)
-            {
-                options.Add("exit");
-                methods.Add(() => exit = true);
-            }
-
-            if (options.Count != methods.Count) { return -1; }
+            if (functions.Keys.Count != functions.Values.Count) { return -1; }
 
             while (!exit)
             {
                 Console.WriteLine("What would you like to do? (Type \"help\" for options)");
                 input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
-                
-                for (int i = 0; i < options.Count; i++)
+
+                if (functions.ContainsKey(input))
                 {
-                    if (input.Length == 0) { break; }
-
-                    if (input == options[i])
-                    {
-                        methods[i]();
-                    }
+                    functions[input]();
                 }
-
+                else
+                {
+                    Console.WriteLine("That option doesn't exist!");
+                }
+                
                 if (_break)
                 {
                     _break = false;
@@ -122,42 +119,48 @@ namespace Analyzer
             _break = true;
         }
 
-        private static void List(List<IList> lists)
-        {
-            for (int i = 0; i < lists.Count; i++)
-            {
-                IList list = lists[i];
-                for (int j = 0; j < list.Count; j++)
-                {
-                    Console.WriteLine(list.ToString() + '[' + j + "]: " + list[j]);
-                }
-            }
-        }
-
-        private static void Help(List<string> list)
+        private static void Help(Dictionary<string, Action> list)
         {
             Console.Write('\n');
             Console.WriteLine("Available options:");
-            foreach (string item in list)
+            foreach (var kvp in list)
             {
-                Console.WriteLine(item);
+                Console.WriteLine(kvp.Key);
             }
             Console.Write('\n');
         }
 
         internal static void People()
         {
-            
+            Dictionary<string, Action> funcs = new()
+            {
+                { "addperson", () => AddPerson() },
+                { "save", () => SerializePeople() },
+            };
+
+            Environment.ExitCode = Menu(funcs);
         }
 
         // Adds a person to the registered list
         internal static void AddPerson()
         {
-            string input = "\0";
             Console.WriteLine("Name?");
-            input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
-        }
+            string tempName = Console.ReadLine();
+            List<string> tempTags = new();
+            Console.WriteLine("What tags would you use to describe them?");
+            Console.WriteLine("Please write tags one at a time. (\"done\" to stop)");
 
+            string input = "NULL";
+            string temp = "NULL";
+            while (temp != "done")
+            {
+                input = Console.ReadLine();
+                temp = input.ToLower(CultureInfo.CurrentCulture);
+                if (temp != "done") { tempTags.Add(input); }
+            }
+
+            PeopleList.Add(new(tempName, tempTags));
+        }
 
         // Sets the path to the folder containing data files
         private static void SetPath()
@@ -190,6 +193,7 @@ namespace Analyzer
         // the .json file outside of the program
         internal static async void SerializePeople()
         {
+            Console.WriteLine("Saving People");
             string path;
             foreach (Person person in PeopleList)
             {
@@ -197,9 +201,9 @@ namespace Analyzer
                 using (FileStream stream = File.Create(path))
                 {
                     await JsonSerializer.SerializeAsync<Person>(stream, person);
-                    await stream.DisposeAsync();
                 }
             }
+            Console.WriteLine("Save Complete");
         }
 
         // Reads all the .json files in the data folder and puts the Person in peopleList

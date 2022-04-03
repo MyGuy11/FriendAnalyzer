@@ -17,11 +17,13 @@ namespace Analyzer
             Tags = inTags;
         }
 
-        public void AddTag(string inTag){
+        public void AddTag(string inTag)
+        {
             Tags.Add(inTag);
         }
 
-        public void AddTag(List<string> inTags){
+        public void AddTag(List<string> inTags)
+        {
             foreach (string tag in inTags)
             {
                 Tags.Add(tag);
