@@ -1,14 +1,13 @@
-﻿using System.Security.AccessControl;
-// Authors = MyGuy, Jasuv
+﻿// Authors = MyGuy, Jasuv
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json; // We're converting the storage medium to JSON
 using System.Threading;
+using System.Threading.Tasks;
 
 // This is useful if you wanna find info about c# stuff
 // https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/
@@ -37,7 +36,13 @@ namespace Analyzer
         {
             Console.WriteLine("Initializing FriendAnalyzer");
             Console.WriteLine("Analyzing FriendList");
-            ReadPeople();
+            Task read = Task.Run(() => ReadPeople());
+            while (read.IsCompletedSuccessfully == false)
+            {
+                Console.Write(".");
+                Thread.Sleep(500);
+            }
+            Console.Write('\n');
 
             if (PeopleList.Count == 0) { Console.WriteLine("You have no friends!"); }
 
@@ -49,7 +54,16 @@ namespace Analyzer
             int err = Menu(funcs);
             Console.WriteLine("Errorcode: " + err);
             Environment.ExitCode = err;
-            SerializePeople();
+            Task save = Task.Run(() => SerializePeople());
+            Console.WriteLine("Saving People");
+            while (save.IsCompleted == false)
+            {
+                Console.Write(".");
+                Thread.Sleep(500);
+            }
+            Console.Write('\n');
+            Console.WriteLine("Save Complete");
+
         }
 
         // This is how you tell the IDE what info to display when u interact with the Method
@@ -89,6 +103,9 @@ namespace Analyzer
 
             if (functions.Keys.Count != functions.Values.Count) { return -1; }
 
+            // Sort the functions before execution
+            functions = SortFuncs(functions);
+
             while (!exit)
             {
                 Console.WriteLine("What would you like to do? (Type \"help\" for options)");
@@ -102,7 +119,7 @@ namespace Analyzer
                 {
                     Console.WriteLine("That option doesn't exist!");
                 }
-                
+
                 if (_break)
                 {
                     _break = false;
@@ -111,6 +128,32 @@ namespace Analyzer
             }
 
             return 0;
+        }
+
+        private static Dictionary<string, Action> SortFuncs(Dictionary<string, Action> funcs)
+        {
+            Dictionary<string, Action> output = new();
+            List<string> tempKeys = funcs.Keys.ToList();
+            string tempKey = "";
+
+            for (int j = 0; j < tempKeys.Count; j ++)
+            {
+                for (int i = 0; i < tempKeys.Count; i++)
+                {
+                    if (string.Compare(tempKeys[j], tempKeys[i], StringComparison.Ordinal) < 0)
+                    {
+                        tempKey = tempKeys[i];
+                        tempKeys[i] = tempKeys[j];
+                        tempKeys[j] = tempKey;
+                    }
+                }
+            }
+
+            foreach (string key in tempKeys)
+            {
+                output.Add(key, funcs[key]);
+            }
+            return output;
         }
 
         // Used for the "back" function, breaks out of the current recursion's loop
@@ -135,7 +178,8 @@ namespace Analyzer
             Dictionary<string, Action> funcs = new()
             {
                 { "addperson", () => AddPerson() },
-                { "save", () => SerializePeople() },
+                { "save", () => SavePeople() },
+                { "list", () => ListPeople() },
             };
 
             Environment.ExitCode = Menu(funcs);
@@ -160,6 +204,28 @@ namespace Analyzer
             }
 
             PeopleList.Add(new(tempName, tempTags));
+        }
+
+        internal static void ListPeople()
+        {
+            Console.WriteLine("Registered People:");
+            foreach (Person person in PeopleList)
+            {
+                Console.WriteLine(person.Name);
+            }
+            Console.Write('\n');
+        }
+        
+        internal static void SavePeople()
+        {
+            Task save = Task.Run(() => SerializePeople());
+            while (save.IsCompleted == false)
+            {
+                Console.Write(".");
+                Thread.Sleep(500);
+            }
+            Console.Write('\n');
+            Console.WriteLine("Save Complete");
         }
 
         // Sets the path to the folder containing data files
@@ -193,17 +259,17 @@ namespace Analyzer
         // the .json file outside of the program
         internal static async void SerializePeople()
         {
-            Console.WriteLine("Saving People");
             string path;
             foreach (Person person in PeopleList)
             {
                 path = Path.Combine(FriendAnalyzerFolderPath, person.Name + ".json");
-                using (FileStream stream = File.Create(path))
+                using (FileStream stream = File.Open(path, FileMode.OpenOrCreate))
                 {
                     await JsonSerializer.SerializeAsync<Person>(stream, person);
+                    stream.Close();
+                    await stream.DisposeAsync();
                 }
             }
-            Console.WriteLine("Save Complete");
         }
 
         // Reads all the .json files in the data folder and puts the Person in peopleList
@@ -215,92 +281,24 @@ namespace Analyzer
                 Console.WriteLine("Creating Friend Analyzer data directory at " + FriendAnalyzerFolderPath);
                 FriendAnalyzerFolderDirectory = Directory.CreateDirectory(FriendAnalyzerFolderPath);
             }
-
-            // Look at every Person.json file and read it into peopleList
-
-        }
-
-        // OLD ANALYZER
-        // Sorry for scrapping your work, Jasuv
-
-        /* 
-        private void TheAnalyzer()
-        {
-            if (!Directory.Exists(friendAnalyzerFolderPath))  
-            {  
-                Directory.CreateDirectory(friendAnalyzerFolderPath);
-            } 
-            
-            Thread.Sleep(2000);
-            for (int i = 0; i < 4; i++)
-            {
-                Console.Write(".");
-                Thread.Sleep(1000);
-            }
-            
-            if (File.Exists(peopleListTextPath))
-            {
-                //write proper friend request stuff here
-
-                /*Console.WriteLine("\nSend friend request(s)? (y/n)");
-                string answer = Console.In.ReadLine().ToLower();
-                while (!(answer.Equals("y") || answer.Equals("n")))
-                {
-                    Console.WriteLine("I said (y/n), loner");
-                    answer = Console.In.ReadLine().ToLower();
-                }
-                if (answer.Equals("y")) { Console.WriteLine("Friend request(s) sent"); }
-                if (answer.Equals("n")) { Console.WriteLine("Friend request(s) not sent"); }
-            }
             else
             {
-                Console.WriteLine("\nIt appears your people list is empty...");
-                Console.WriteLine("Please input at least 3 people into the list\n");
-                Thread.Sleep(500);
-                for (int i = 0; i < 3; i++)
+                FriendAnalyzerFolderDirectory = new DirectoryInfo(FriendAnalyzerFolderPath);
+            }
+
+            // Look at every Person.json file and read it into peopleList
+            FileInfo[] files = FriendAnalyzerFolderDirectory.GetFiles();
+            foreach (var file in files)
+            {
+                if (file.Name.Contains(".json"))
                 {
-                    AddPeople();
-                }
-                using (StreamWriter personList = File.CreateText(peopleListTextPath))
-                {
-                    foreach (Person person in peopleList)
+                    using (FileStream stream = File.Open(file.FullName, FileMode.Open))
                     {
-                        personList.WriteLine(person.Name);
-                        foreach (string tag in person.Tags)
-                        {
-                            personList.WriteLine(tag);
-                        }
+                        PeopleList.Add(await JsonSerializer.DeserializeAsync<Person>(stream));
+                        stream.Close();
                     }
                 }
-                Console.Write("Creating new people list");
-                for (int i = 0; i < 3; i++)
-                {
-                    Console.Write(".");
-                    Thread.Sleep(1000);
-                }
-                Console.WriteLine("\n");
-                TheAnalyzer();
             }
         }
-
-        private void AddPeople()
-        {
-            Console.WriteLine("Name? ");
-            string inName = Console.In.ReadLine().ToLower();
-            Console.WriteLine("Input at least 1 tag for " + inName + ". Type stop to finish...");
-            List<string> inTags = new();
-            bool exit = false;
-            while (!exit)
-            {
-                string inTag = Console.In.ReadLine().ToLower();
-                if (inTag != "stop") { inTags.Add(inTag); }
-                else { exit = true; }
-            }
-            Console.WriteLine("Adding " + inName + " to people list...\n");
-            Person newPerson = new(inName, inTags);
-            peopleList.Add(newPerson);
-        }
-    }
-    */
     }
 }
