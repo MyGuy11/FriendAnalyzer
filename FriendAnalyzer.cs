@@ -45,11 +45,11 @@ namespace Analyzer
             Console.Write('\n');
 
             Console.WriteLine("Welcome to FriendAnalyzer!");
-            Console.WriteLine(Environment.OSVersion.Platform.ToString());
-            if (Environment.OSVersion.Platform.ToString().Contains("Windows"))
+            Console.WriteLine(Environment.OSVersion.VersionString);
+            if (Environment.OSVersion.VersionString.Contains("Windows"))
             {
                 Console.WriteLine("Among Pequeño");
-                using (SoundPlayer player = new(Directory.GetCurrentDirectory() + "sus.wav")) { player.Play(); }
+                using (SoundPlayer player = new(Directory.GetCurrentDirectory() + "\\sus.wav")) { player.Play(); }
             }
 
             Console.WriteLine("Analyzing FriendList");
@@ -205,9 +205,10 @@ namespace Analyzer
             string tempName = "";
 
             Console.WriteLine("Name?");
-            while (!valid)
+            while (valid != true)
             {
                 tempName = Console.ReadLine();
+                if (PeopleList.Count == 0) { valid = true; }
                 foreach (Person person in PeopleList)
                 {
                     Console.WriteLine("{0} != {1}", tempName.ToLower(CultureInfo.CurrentCulture), person.Name.ToLower(CultureInfo.CurrentCulture));
