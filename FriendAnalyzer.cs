@@ -210,9 +210,9 @@ namespace Analyzer
                 tempName = Console.ReadLine();
                 foreach (Person person in PeopleList)
                 {
+                    Console.WriteLine("{0} != {1}", tempName.ToLower(CultureInfo.CurrentCulture), person.Name.ToLower(CultureInfo.CurrentCulture));
                     if (tempName.ToLower(CultureInfo.CurrentCulture) == person.Name.ToLower(CultureInfo.CurrentCulture))
                     {
-                        Console.WriteLine("{0} != {1}", tempName.ToLower(CultureInfo.CurrentCulture), person.Name.ToLower(CultureInfo.CurrentCulture));
                         Console.WriteLine("{0} already exists!", person.Name);
                         valid = false;
                         break;

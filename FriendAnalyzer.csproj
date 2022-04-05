@@ -7,6 +7,7 @@
   <ItemGroup>
     <Content Include="FriendAnalyzer.cs" />
     <Content Include="Person.cs" />
+    <Content Include="sus.wav" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Windows.Extensions" Version="6.0.0" />
