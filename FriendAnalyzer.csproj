@@ -8,4 +8,7 @@
     <Content Include="FriendAnalyzer.cs" />
     <Content Include="Person.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Windows.Extensions" Version="6.0.0" />
+  </ItemGroup>
 </Project>

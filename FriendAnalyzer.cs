@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text.Json; // We're converting the storage medium to JSON
+using System.Media;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,9 +23,9 @@ namespace Analyzer
         private static List<string> PeopleNames = new(); // Stores the names of the people in peopleList 
         private static List<string> PeopleTags = new(); // Stores all the Tags that People in your list possess
         private static Dictionary<string, string> Manual = new(); // Stores the descriptions of all the functions for Help()
-        private static ThreadLocal<int> Sebek = new(() => 0); // Keeps track of recurses; Thx to Jeroen van Langen on Stack Overflow for this
+        private static ThreadLocal<int> Sebek = new(() => 0); // Keeps track of recurses; In honor of our APCS teacher, who we didn't believe when she said that recursion was useful
         private static bool _break; // Used for Break()
-        private static bool exit;
+        private static bool exit; // Used to exit the program
 
         static FriendAnalyzer()
         {
@@ -34,16 +35,24 @@ namespace Analyzer
 
         public static void Main()
         {
-            Console.WriteLine("Initializing FriendAnalyzer");
-            Console.WriteLine("Analyzing FriendList");
+            Console.Write("Initializing FriendAnalyzer");
             Task read = Task.Run(() => ReadPeople());
             while (read.IsCompletedSuccessfully == false)
             {
                 Console.Write(".");
-                Thread.Sleep(500);
+                Thread.Sleep(200);
             }
             Console.Write('\n');
 
+            Console.WriteLine("Welcome to FriendAnalyzer!");
+            Console.WriteLine(Environment.OSVersion.Platform.ToString());
+            if (Environment.OSVersion.Platform.ToString().Contains("Windows"))
+            {
+                Console.WriteLine("Among Pequeño");
+                using (SoundPlayer player = new(Directory.GetCurrentDirectory() + "sus.wav")) { player.Play(); }
+            }
+
+            Console.WriteLine("Analyzing FriendList");
             if (PeopleList.Count == 0) { Console.WriteLine("You have no friends!"); }
 
             Dictionary<string, Action> funcs = new()
@@ -54,8 +63,10 @@ namespace Analyzer
             int err = Menu(funcs);
             Console.WriteLine("Errorcode: " + err);
             Environment.ExitCode = err;
+            SavePeople();
+            /*
             Task save = Task.Run(() => SerializePeople());
-            Console.WriteLine("Saving People");
+            Console.Write("Saving People");
             while (save.IsCompleted == false)
             {
                 Console.Write(".");
@@ -63,7 +74,7 @@ namespace Analyzer
             }
             Console.Write('\n');
             Console.WriteLine("Save Complete");
-
+            */
         }
 
         // This is how you tell the IDE what info to display when u interact with the Method
@@ -75,10 +86,9 @@ namespace Analyzer
         /// (0 = ok)<br />
         /// (-1 = inequal amount of <paramref name="options"/> and <paramref name="methods"/>) 
         /// </returns>
-        internal static int Menu(Dictionary<string, Action> functions)
+        private static int Menu(Dictionary<string, Action> functions)
         {
             Sebek.Value++;
-            Console.WriteLine("Sebek: " + Sebek.Value);
             string input = "NULL"; // Setting a value becuase of PTSD from Unity
 
             if (Sebek.Value > 1 && functions.ContainsKey("back") == false)
@@ -173,23 +183,44 @@ namespace Analyzer
             Console.Write('\n');
         }
 
-        internal static void People()
+        private static void People()
         {
             Dictionary<string, Action> funcs = new()
             {
                 { "addperson", () => AddPerson() },
                 { "save", () => SavePeople() },
                 { "list", () => ListPeople() },
+                { "tags", () => ListTags() },
+                { "addtag", () => AddTags(1) },
+                { "addtags", () => AddTags(0) },
             };
 
             Environment.ExitCode = Menu(funcs);
         }
 
         // Adds a person to the registered list
-        internal static void AddPerson()
+        private static void AddPerson()
         {
+            bool valid = false;
+            string tempName = "";
+
             Console.WriteLine("Name?");
-            string tempName = Console.ReadLine();
+            while (!valid)
+            {
+                tempName = Console.ReadLine();
+                foreach (Person person in PeopleList)
+                {
+                    if (tempName.ToLower(CultureInfo.CurrentCulture) == person.Name.ToLower(CultureInfo.CurrentCulture))
+                    {
+                        Console.WriteLine("{0} != {1}", tempName.ToLower(CultureInfo.CurrentCulture), person.Name.ToLower(CultureInfo.CurrentCulture));
+                        Console.WriteLine("{0} already exists!", person.Name);
+                        valid = false;
+                        break;
+                    }
+                    else { valid = true; }
+                }
+            }
+
             List<string> tempTags = new();
             Console.WriteLine("What tags would you use to describe them?");
             Console.WriteLine("Please write tags one at a time. (\"done\" to stop)");
@@ -203,10 +234,36 @@ namespace Analyzer
                 if (temp != "done") { tempTags.Add(input); }
             }
 
+            foreach (string tag in tempTags)
+            {
+                if (PeopleTags.Contains(tag) == false)
+                {
+                    PeopleTags.Add(tag);
+                }
+            }
+
             PeopleList.Add(new(tempName, tempTags));
         }
 
-        internal static void ListPeople()
+        private static void AddTags(int amount)
+        {
+            string input = "";
+            string name = "";
+
+            Console.WriteLine("Name?");
+            input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
+            foreach (Person person in PeopleList)
+            {
+                if (input.ToLower(CultureInfo.CurrentCulture) == person.Name.ToLower(CultureInfo.CurrentCulture))
+                {
+                    name = input.ToLower(CultureInfo.CurrentCulture);
+                    break;
+                }
+                else { Console.WriteLine("{0} doesn't exist!", input); }
+            }
+        }
+
+        private static void ListPeople()
         {
             Console.WriteLine("Registered People:");
             foreach (Person person in PeopleList)
@@ -215,14 +272,35 @@ namespace Analyzer
             }
             Console.Write('\n');
         }
+
+        private static void ListTags()
+        {
+            string input = "";
+
+            Console.WriteLine("Name?");
+            input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
+            foreach (Person person in PeopleList)
+            {
+                if (input.ToLower(CultureInfo.CurrentCulture) == person.Name.ToLower(CultureInfo.CurrentCulture))
+                {
+                    Console.WriteLine("{0}'s Tags:", person.Name);
+                    foreach (string tag in person.Tags)
+                    {
+                        Console.WriteLine(tag);
+                    }
+                    Console.Write('\n');
+                }
+            }
+        }
         
         internal static void SavePeople()
         {
+            Console.Write("Saving People");
             Task save = Task.Run(() => SerializePeople());
             while (save.IsCompleted == false)
             {
                 Console.Write(".");
-                Thread.Sleep(500);
+                Thread.Sleep(200);
             }
             Console.Write('\n');
             Console.WriteLine("Save Complete");
@@ -257,12 +335,18 @@ namespace Analyzer
         // Serializes all registered people to their own .json file
         // This is done so that people can easily import and export people, without having to edit
         // the .json file outside of the program
-        internal static async void SerializePeople()
+        private static async void SerializePeople()
         {
-            string path;
+            string path = "";
+            string bakPath = "";
             foreach (Person person in PeopleList)
             {
                 path = Path.Combine(FriendAnalyzerFolderPath, person.Name + ".json");
+                bakPath = path + ".bak";
+                if (File.Exists(path))
+                {
+                    File.Move(path, bakPath, true);
+                }
                 using (FileStream stream = File.Open(path, FileMode.OpenOrCreate))
                 {
                     await JsonSerializer.SerializeAsync<Person>(stream, person);
@@ -273,7 +357,7 @@ namespace Analyzer
         }
 
         // Reads all the .json files in the data folder and puts the Person in peopleList
-        internal static async void ReadPeople()
+        private static async void ReadPeople()
         {
             // I know i could do !File.Exists(path), but it's explicitly definied for clarity
             if (Directory.Exists(FriendAnalyzerFolderPath) == false)
@@ -290,12 +374,47 @@ namespace Analyzer
             FileInfo[] files = FriendAnalyzerFolderDirectory.GetFiles();
             foreach (var file in files)
             {
-                if (file.Name.Contains(".json"))
+                if (file.Name.Contains(".json") && !file.Name.Contains(".bak"))
                 {
                     using (FileStream stream = File.Open(file.FullName, FileMode.Open))
                     {
-                        PeopleList.Add(await JsonSerializer.DeserializeAsync<Person>(stream));
+                        try { PeopleList.Add(await JsonSerializer.DeserializeAsync<Person>(stream)); }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Exception: {0}\nSource: {1}", e.Message, e.Source);
+                            Console.WriteLine("Fetching data from Backup");
+                            try { PeopleList.Add(await JsonSerializer.DeserializeAsync<Person>(stream)); }
+                            catch (Exception c)
+                            {
+                                Console.WriteLine("Backup doesn't exist or is corrupted");
+                                Console.WriteLine("Exception: {0}\nSource: {1}", c.Message, c.Source);
+                            }
+                        }
                         stream.Close();
+                    }
+                }
+            }
+
+            if (PeopleList.Count > 0)
+            {
+                foreach (Person person in PeopleList)
+                {
+                    if (person.Tags != null)
+                    {
+                        foreach (string tag in person.Tags)
+                        {
+                            if (PeopleTags.Contains(tag) == false)
+                            {
+                                PeopleTags.Add(tag);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("One of your people is corrupted");
+                        Console.WriteLine("Check the save path for any nameless .json files (turn hidden files on)");
+                        Console.WriteLine("You can get the save path from the \"path\" command");
+                        continue;
                     }
                 }
             }
