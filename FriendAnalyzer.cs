@@ -53,7 +53,7 @@ namespace Analyzer
             }
 
             Console.WriteLine("Analyzing FriendList");
-            if (PeopleList.Count == 0) { Console.WriteLine("You have no friends!"); }
+            if (PeopleList.Count == 0) { Console.WriteLine("You have no registered people!"); }
 
             Dictionary<string, Action> funcs = new()
             {
@@ -266,6 +266,12 @@ namespace Analyzer
 
         private static void ListPeople()
         {
+            if (PeopleList.Count == 0)
+            {
+                Console.WriteLine("You have no registered people!");
+                return;
+            }
+
             Console.WriteLine("Registered People:");
             foreach (Person person in PeopleList)
             {
@@ -277,6 +283,12 @@ namespace Analyzer
         private static void ListTags()
         {
             string input = "";
+
+            if (PeopleList.Count == 0)
+            {
+                Console.WriteLine("You have no registered people!");
+                return;
+            }
 
             Console.WriteLine("Name?");
             input = Console.ReadLine().ToLower(CultureInfo.CurrentCulture);
